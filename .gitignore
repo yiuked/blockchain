@@ -1,1 +1,3 @@
 .idea
+/blockchain_*.db
+/blockchain_*.db.lock

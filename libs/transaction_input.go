@@ -2,36 +2,21 @@ package libs
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"golang.org/x/crypto/ripemd160"
-	"log"
 )
 
-// TXInput represents a transaction input
+// TXInput represents a transaction input(交易输出不是指收款，而是指整个交易最开始的输入金额)
+// 比如：你拿10元钱去买3元钱的汽水，那么10元钱是输入，而输出则是3元输出给老板，7元输出给你自己。
 type TXInput struct {
 	Txid      []byte  // 这个Txid是否与transaction中的ID相等呢？
 	Vout      int     // 交易金额
-	Signature []byte  //
-	PubKey    []byte  // 公钥非Hash
+	Signature []byte  // 交易开始输入金额需要调用出款人的私钥签名
+	PubKey    []byte  // 公钥非Hash，用于验证出款人的签名信息是否正确
 }
 
-// UsesKey 检测接收人的公钥是否正确
+// UsesKey 检测交易输入的公钥hash是否正确
 func (in *TXInput) UsesKey(pubKeyHash []byte) bool {
 	lockingHash := HashPubKey(in.PubKey)
 
 	return bytes.Compare(lockingHash, pubKeyHash) == 0
 }
 
-// HashPubKey 将公钥进行Hash化处理
-func HashPubKey(pubKey []byte) []byte {
-	publicSHA256 := sha256.Sum256(pubKey)
-
-	RIPEMD160Hasher := ripemd160.New()
-	_, err := RIPEMD160Hasher.Write(publicSHA256[:])
-	if err != nil {
-		log.Panic(err)
-	}
-	publicRIPEMD160 := RIPEMD160Hasher.Sum(nil)
-
-	return publicRIPEMD160
-}

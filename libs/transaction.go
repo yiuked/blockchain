@@ -15,21 +15,22 @@ import (
 	"log"
 )
 
-const subsidy = 10
+const subsidy = 10 // 创建一个新的区块，奖励多少币
 
 // Transaction represents a Bitcoin transaction
 type Transaction struct {
-	ID   []byte
-	Vin  []TXInput
-	Vout []TXOutput
+	ID   []byte      // 交易定单号
+	Vin  []TXInput   // 收款
+	Vout []TXOutput  // 出款
 }
 
-// IsCoinbase checks whether the transaction is coinbase（验证交易是否为创世交易）
+// IsCoinbase checks whether the transaction is coinbase（“币基交易”（Coinbase Transaction）的特殊交易，
+// 它是每个区块中的第一笔交易，这种交易存在的原因是作为对挖矿的奖励，创造出全新的可花费比特币用来支付给“赢家”矿工。）
 func (tx Transaction) IsCoinbase() bool {
 	return len(tx.Vin) == 1 && len(tx.Vin[0].Txid) == 0 && tx.Vin[0].Vout == -1
 }
 
-// Serialize returns a serialized Transaction
+// Serialize returns a serialized Transaction(返回一笔经过序列化后的交易)
 func (tx Transaction) Serialize() []byte {
 	var encoded bytes.Buffer
 
@@ -42,7 +43,7 @@ func (tx Transaction) Serialize() []byte {
 	return encoded.Bytes()
 }
 
-// Hash returns the hash of the Transaction
+// Hash returns the hash of the Transaction(返回一串交易的hash数据，hash不包含交易定单号)
 func (tx *Transaction) Hash() []byte {
 	var hash [32]byte
 
@@ -54,7 +55,7 @@ func (tx *Transaction) Hash() []byte {
 	return hash[:]
 }
 
-// Sign 对每一笔交易进行签名
+// Sign signs each input of a Transaction (签名的过程会使用私钥来验证每一笔交易输入的合法性)
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTXs map[string]Transaction) {
 	if tx.IsCoinbase() {
 		return
@@ -128,7 +129,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 	return txCopy
 }
 
-// Verify 验证输收款交易的签名。（为何是验证上笔交易？）
+// Verify verifies signatures of Transaction inputs
 func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 	if tx.IsCoinbase() {
 		return true
@@ -172,7 +173,7 @@ func (tx *Transaction) Verify(prevTXs map[string]Transaction) bool {
 	return true
 }
 
-// NewCoinbaseTX creates a new coinbase transaction
+// NewCoinbaseTX creates a new coinbase transaction(创建一个币基交易)
 func NewCoinbaseTX(to, data string) *Transaction {
 	if data == "" {
 		randData := make([]byte, 20)
@@ -191,6 +192,53 @@ func NewCoinbaseTX(to, data string) *Transaction {
 
 	return &tx
 }
+
+// NewUTXOTransaction creates a new transaction(创建一笔新交易)
+// wallet 支出人钱包
+// to 收款人钱包地址
+
+func NewUTXOTransaction(wallet *Wallet, to string, amount int, UTXOSet *UTXOSet) *Transaction {
+	var inputs []TXInput
+	var outputs []TXOutput
+
+	pubKeyHash := HashPubKey(wallet.PublicKey)
+	// 获取当前钱包账户的余额与UTXO
+	acc, validOutputs := UTXOSet.FindSpendableOutputs(pubKeyHash, amount)
+
+	if acc < amount {
+		log.Panic("ERROR: Not enough funds")
+	}
+
+	// Build a list of inputs（通过前面得到的UTXO创建交易输入Input）
+	for txid, outs := range validOutputs {
+		txID, err := hex.DecodeString(txid)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		for _, out := range outs {
+			input := TXInput{txID, out, nil, wallet.PublicKey}
+			inputs = append(inputs, input)
+		}
+	}
+
+	// Build a list of outputs(创建交易输出：一部分收接收人，如果有剩余则找零给出款人)
+	from := fmt.Sprintf("%s", wallet.GetAddress())
+	outputs = append(outputs, *NewTXOutput(amount, to))
+	if acc > amount {
+		outputs = append(outputs, *NewTXOutput(acc-amount, from)) // a change
+	}
+
+	// 创建交易
+	tx := Transaction{nil, inputs, outputs}
+	tx.ID = tx.Hash()
+
+	// 对交易进行签名
+	UTXOSet.Blockchain.SignTransaction(&tx, wallet.PrivateKey)
+
+	return &tx
+}
+
 
 // DeserializeTransaction deserializes a transaction
 func DeserializeTransaction(data []byte) Transaction {
