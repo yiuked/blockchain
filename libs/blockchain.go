@@ -21,6 +21,8 @@ type Blockchain struct {
 	db  *bolt.DB
 }
 
+var bc *Blockchain
+
 // CreateBlockchain creates a new blockchain DB(创建一个新的区块链数据库，并写入创世块，从而创建一个新的区块链【区块链起点函数】)
 // 创世块的地址写谁的呢？
 func CreateBlockchain(address string, nodeID string) *Blockchain {
@@ -71,6 +73,9 @@ func CreateBlockchain(address string, nodeID string) *Blockchain {
 
 // NewBlockchain creates a new Blockchain with genesis Block(使用创世块创建一个新的区块链)
 func NewBlockchain(nodeID string) *Blockchain {
+	if bc != nil {
+		return bc
+	}
 	dbFile := fmt.Sprintf(dbFile, nodeID)
 	if dbExists(dbFile) == false {
 		fmt.Println("No existing blockchain found. Create one first.")
@@ -93,9 +98,9 @@ func NewBlockchain(nodeID string) *Blockchain {
 		log.Panic(err)
 	}
 
-	bc := Blockchain{tip, db}
+	bc = &Blockchain{tip, db}
 
-	return &bc
+	return bc
 }
 
 // AddBlock saves the block into the blockchain（将区块保存到区块链当中）

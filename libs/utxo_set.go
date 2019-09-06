@@ -50,7 +50,7 @@ func (u UTXOSet) FindSpendableOutputs(pubkeyHash []byte, amount int) (int, map[s
 	return accumulated, unspentOutputs
 }
 
-// FindUTXO finds UTXO for a public key hash
+// FindUTXO finds UTXO for a public key hash(通过公钥Hash获取用户的UTXO)
 func (u UTXOSet) FindUTXO(pubKeyHash []byte) []TXOutput {
 	var UTXOs []TXOutput
 	db := u.Blockchain.db
@@ -143,8 +143,8 @@ func (u UTXOSet) Reindex() {
 	})
 }
 
-// Update updates the UTXO set with transactions from the Block
-// The Block is considered to be the tip of a blockchain
+// Update updates the UTXO set with transactions from the Block(更新来自这个块中的交易所使用的UTXO)
+// The Block is considered to be the tip of a blockchain(这个区块是整个区块链的最顶端)
 func (u UTXOSet) Update(block *Block) {
 	db := u.Blockchain.db
 

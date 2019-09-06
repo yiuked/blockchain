@@ -34,7 +34,7 @@ func NewGenesisBlock(coinbase *Transaction) *Block {
 	return NewBlock([]*Transaction{coinbase}, []byte{}, 0)
 }
 
-// HashTransactions returns a hash of the transactions in the block
+// HashTransactions returns a hash of the transactions in the block（返回这个块的交易hash）
 func (b *Block) HashTransactions() []byte {
 	var transactions [][]byte
 
@@ -46,7 +46,7 @@ func (b *Block) HashTransactions() []byte {
 	return mTree.RootNode.Data
 }
 
-// Serialize serializes the block
+// Serialize serializes the block(序列化块)
 func (b *Block) Serialize() []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
@@ -59,7 +59,7 @@ func (b *Block) Serialize() []byte {
 	return result.Bytes()
 }
 
-// DeserializeBlock deserializes a block
+// DeserializeBlock deserializes a block(反序列化块)
 func DeserializeBlock(d []byte) *Block {
 	var block Block
 
