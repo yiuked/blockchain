@@ -59,16 +59,11 @@ func (s *WalletRouter) Transfer(c *gin.Context) {
 
 	payerWallet := wallets.GetWallet(from)
 
-	UTXOSet := libs.UTXOSet{bc}
+	UTXOSet := libs.UTXOSet{Blockchain: bc}
 	// 创建一笔交易
 	tx := libs.NewUTXOTransaction(&payerWallet, to, amount, &UTXOSet)
-	// 创建币基
-	cbTx := libs.NewCoinbaseTX(from, "")
-	txs := []*libs.Transaction{cbTx, tx}
-	// 自己挖矿
-	newBlock := bc.MineBlock(txs)
 
-	UTXOSet.Update(newBlock)
+	libs.SendTx(libs.KnownNodes[0], tx)
 
-	common.Dispatch(c, "0000", "success", newBlock)
+	common.Dispatch(c, "0000", "success", tx)
 }
