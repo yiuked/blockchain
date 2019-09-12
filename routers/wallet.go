@@ -2,10 +2,10 @@ package routers
 
 import (
 	"block-chain/common"
-	"block-chain/config"
 	"block-chain/libs"
 	"github.com/gin-gonic/gin"
 	"log"
+	"os"
 )
 
 type WalletRouter struct {
@@ -13,15 +13,15 @@ type WalletRouter struct {
 
 // 钱包列表
 func (s *WalletRouter) Wallets(c *gin.Context) {
-	wallets, _ := libs.NewWallets(config.NodeID)
+	wallets, _ := libs.NewWallets(os.Getenv("NODE_ID"))
 	common.Dispatch(c, "0000", "success", wallets)
 }
 
 // 创建钱包
 func (s *WalletRouter) NewWallet(c *gin.Context) {
-	wallets, _ := libs.NewWallets(config.NodeID)
+	wallets, _ := libs.NewWallets(os.Getenv("NODE_ID"))
 	address := wallets.CreateWallet()
-	wallets.SaveToFile(config.NodeID)
+	wallets.SaveToFile(os.Getenv("NODE_ID"))
 	common.Dispatch(c, "0000", "success", address)
 }
 
@@ -30,7 +30,7 @@ func (s *WalletRouter) Balance(c *gin.Context) {
 	if !libs.ValidateAddress(address) {
 		log.Panic("ERROR: Address is not valid")
 	}
-	bc := libs.NewBlockchain(config.NodeID)
+	bc := libs.NewBlockchain(os.Getenv("NODE_ID"))
 	UTXOSet := libs.UTXOSet{bc}
 	UTXOSet.Reindex()
 
@@ -51,8 +51,8 @@ func (s *WalletRouter) Transfer(c *gin.Context) {
 	to := c.PostForm("to")
 	amount := common.StrToInt(c.PostForm("amount"))
 
-	bc := libs.NewBlockchain(config.NodeID)
-	wallets, err := libs.NewWallets(config.NodeID)
+	bc := libs.NewBlockchain(os.Getenv("NODE_ID"))
+	wallets, err := libs.NewWallets(os.Getenv("NODE_ID"))
 	if err != nil {
 		common.Dispatch(c, "10401", "Wallets not found", nil)
 	}
@@ -66,4 +66,25 @@ func (s *WalletRouter) Transfer(c *gin.Context) {
 	libs.SendTx(libs.KnownNodes[0], tx)
 
 	common.Dispatch(c, "0000", "success", tx)
+}
+
+func (s *WalletRouter) UTXOs(c *gin.Context) {
+	address := c.Query("address")
+
+	bc := libs.NewBlockchain(os.Getenv("NODE_ID"))
+	wallets, err := libs.NewWallets(os.Getenv("NODE_ID"))
+	if err != nil {
+		common.Dispatch(c, "10401", "Wallets not found", nil)
+	}
+
+	wallet := wallets.GetWallet(address)
+	UTXOSet := libs.UTXOSet{Blockchain: bc}
+
+	UTXOs := UTXOSet.FindUTXO(libs.HashPubKey(wallet.PublicKey))
+
+	common.Dispatch(c, "0000", "success", UTXOs)
+}
+
+func (s *WalletRouter) MeePool(c *gin.Context) {
+	common.Dispatch(c, "0000", "success", libs.MeePool)
 }

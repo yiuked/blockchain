@@ -5,11 +5,11 @@
 package cmd
 
 import (
-	"block-chain/config"
 	"block-chain/routers"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -25,9 +25,11 @@ func RunWeb() {
 	router.GET("/wallet", walletRouter.Wallets)
 	router.POST("/wallet", walletRouter.NewWallet)
 	router.GET("/wallet/balance", walletRouter.Balance)
+	router.GET("/wallet/utxos", walletRouter.UTXOs)
+	router.GET("/wallet/meepool", walletRouter.MeePool)
 	router.POST("/wallet/transfer", walletRouter.Transfer)
 
-	_ = router.Run(":" + config.APIPort)
+	_ = router.Run(":" + os.Getenv("API_PORT"))
 }
 
 // 请求加入跨域处理

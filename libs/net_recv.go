@@ -137,6 +137,7 @@ func handleGetData(request []byte, bc *Blockchain) {
 	}
 }
 
+// 程序不会受理节点自己提交过来的交易，意思就是节点自己产生的交易，自己不会记账，只能交给其它节点记
 func handleTx(request []byte, bc *Blockchain) {
 	var buff bytes.Buffer
 	var payload TX
@@ -159,47 +160,47 @@ func handleTx(request []byte, bc *Blockchain) {
 				sendInv(node, "tx", [][]byte{tx.ID})
 			}
 		}
-	} else {
-		if len(MeePool) >= 2 && len(MiningAddress) > 0 {
-		MineTransactions:
-			var txs []*Transaction
+	}
 
-			for id := range MeePool {
-				tx := MeePool[id]
-				if bc.VerifyTransaction(&tx) {
-					txs = append(txs, &tx)
-				}
+	if len(MeePool) >= 2 && len(MiningAddress) > 0 {
+	MineTransactions:
+		var txs []*Transaction
+
+		for id := range MeePool {
+			tx := MeePool[id]
+			if bc.VerifyTransaction(&tx) {
+				txs = append(txs, &tx)
 			}
+		}
 
-			if len(txs) == 0 {
-				fmt.Println("All transactions are invalid! Waiting for new ones...")
-				return
+		if len(txs) == 0 {
+			fmt.Println("All transactions are invalid! Waiting for new ones...")
+			return
+		}
+
+		// 创建币基
+		cbTx := NewCoinbaseTX(MiningAddress, "")
+		txs = append(txs, cbTx)
+
+		newBlock := bc.MineBlock(txs)
+		UTXOSet := UTXOSet{bc}
+		UTXOSet.Reindex()
+
+		fmt.Println("New block is mined!")
+
+		for _, tx := range txs {
+			txID := hex.EncodeToString(tx.ID)
+			delete(MeePool, txID)
+		}
+
+		for _, node := range KnownNodes {
+			if node != NodeAddress {
+				sendInv(node, "block", [][]byte{newBlock.Hash})
 			}
+		}
 
-			// 创建币基
-			cbTx := NewCoinbaseTX(MiningAddress, "")
-			txs = append(txs, cbTx)
-
-			newBlock := bc.MineBlock(txs)
-			UTXOSet := UTXOSet{bc}
-			UTXOSet.Reindex()
-
-			fmt.Println("New block is mined!")
-
-			for _, tx := range txs {
-				txID := hex.EncodeToString(tx.ID)
-				delete(MeePool, txID)
-			}
-
-			for _, node := range KnownNodes {
-				if node != NodeAddress {
-					sendInv(node, "block", [][]byte{newBlock.Hash})
-				}
-			}
-
-			if len(MeePool) > 0 {
-				goto MineTransactions
-			}
+		if len(MeePool) > 0 {
+			goto MineTransactions
 		}
 	}
 }
@@ -257,5 +258,5 @@ func handleConnection(conn net.Conn, bc *Blockchain) {
 		fmt.Println("Unknown command!")
 	}
 
-	log.Fatal(conn.Close())
+	//log.Fatal(conn.Close())
 }

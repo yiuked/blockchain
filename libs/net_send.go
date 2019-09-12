@@ -1,12 +1,12 @@
 package libs
 
 import (
-	"block-chain/config"
 	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 )
 
 // 需要发送的交易信息
@@ -85,7 +85,7 @@ func SendVersion(addr string, bc *Blockchain) {
 }
 
 func sendData(addr string, data []byte) {
-	conn, err := net.Dial(config.MineProto, addr)
+	conn, err := net.Dial(os.Getenv("MINE_PROTO"), addr)
 	if err != nil {
 		fmt.Printf("%s is not available\n", addr)
 		var updatedNodes []string

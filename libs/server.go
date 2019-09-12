@@ -1,12 +1,12 @@
 package libs
 
 import (
-	"block-chain/config"
 	"bytes"
 	"encoding/gob"
 	"fmt"
 	"log"
 	"net"
+	"os"
 )
 
 const nodeVersion = 1
@@ -71,9 +71,9 @@ func requestBlocks() {
 
 // StartServer starts a node(启动一个节点)
 func StartServer(nodeID string, minerAddress string) {
-	NodeAddress = fmt.Sprintf("localhost:%s", config.MinerPort)
+	NodeAddress = fmt.Sprintf("localhost:%s", os.Getenv("MINE_PORT"))
 	MiningAddress = minerAddress
-	ln, err := net.Listen(config.MineProto, NodeAddress)
+	ln, err := net.Listen(os.Getenv("MINE_PROTO"), NodeAddress)
 	if err != nil {
 		log.Panic(err)
 	}

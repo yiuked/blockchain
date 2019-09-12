@@ -5,10 +5,10 @@
 package cmd
 
 import (
-	"block-chain/config"
 	"block-chain/libs"
+	"os"
 )
 
 func RunMiner() {
-	libs.StartServer(config.NodeID, config.Gaddress)
+	libs.StartServer(os.Getenv("NODE_ID"), os.Getenv("G_ADDR"))
 }

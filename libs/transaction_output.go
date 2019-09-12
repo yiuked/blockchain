@@ -9,7 +9,7 @@ import (
 // TXOutput represents a transaction output(交易输出不是指出款，而是指整个交易最后生产的钱去哪里)
 // 比如：你拿10元钱去买3元钱的汽水，那么10元钱是输入，而输出则是3元输出给老板，7元输出给你自己。
 type TXOutput struct {
-	Value      int
+	Value      int       //
 	PubKeyHash []byte
 }
 

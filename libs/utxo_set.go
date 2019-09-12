@@ -19,6 +19,8 @@ type UTXOSet struct {
 // pubkeyHash 公钥hash，
 // amount
 // return(可支配总额，UTXO)
+
+// 如果已经被写入到其它交易中，则应该跳过？
 func (u UTXOSet) FindSpendableOutputs(pubkeyHash []byte, amount int) (int, map[string][]int) {
 	unspentOutputs := make(map[string][]int)
 	accumulated := 0
@@ -33,9 +35,9 @@ func (u UTXOSet) FindSpendableOutputs(pubkeyHash []byte, amount int) (int, map[s
 			outs := DeserializeOutputs(v)
 
 			for outIdx, out := range outs.Outputs {
-				// 检测公钥可以支配的UTXO
 				if out.IsLockedWithKey(pubkeyHash) && accumulated < amount {
 					accumulated += out.Value
+					// 这里是获取索引，不是获取余额
 					unspentOutputs[txID] = append(unspentOutputs[txID], outIdx)
 				}
 			}
